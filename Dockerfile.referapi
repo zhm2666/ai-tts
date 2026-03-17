@@ -1,0 +1,16 @@
+FROM quay.io/0voice/golang:1.24 as stage0
+RUN go env -w GOPROXY=https://goproxy.cn,https://proxy.golang.com.cn,direct
+ADD ./ai-transform-backend /src/ai-transform-backend
+WORKDIR /src/ai-transform-backend
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ai-transform-refer-api ./transform-refer-api
+
+FROM quay.io/0voice/alpine:3.18 as stage1
+MAINTAINER nick
+WORKDIR /app/
+
+COPY --from=stage0 /src/ai-transform-backend/ai-transform-refer-api /app/
+ADD ./ai-transform-backend/dev.referapi.config.yaml /app/config.yaml
+# 指定入口程序
+ENTRYPOINT ["./ai-transform-refer-api"]
+# 指定容器的启动命令或者入口程序的参数
+CMD ["--config=config.yaml"]
